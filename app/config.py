@@ -25,7 +25,13 @@ MAX_DTW_LENGTH: int = int(os.getenv("MAX_DTW_LENGTH", "60000"))  # Maximum frame
 MAX_FILE_SIZE_MB: int = int(os.getenv("MAX_FILE_SIZE_MB", "50"))
 MAX_AUDIO_DURATION_SECONDS: float = float(os.getenv("MAX_AUDIO_DURATION_SECONDS", "600"))  # 10 minutes
 MIN_AUDIO_DURATION_SECONDS: float = float(os.getenv("MIN_AUDIO_DURATION_SECONDS", "0.1"))  # 100ms
-ALLOWED_AUDIO_EXTENSIONS: List[str] = ['.wav', '.mp3', '.flac', '.ogg', '.m4a']
+# Allow a wider range of audio extensions. In addition to common formats like
+# WAV, MP3, FLAC and OGG we include `.m4a`, `.aac`, `.mpga` and `.mpeg` to
+# accommodate audio streams that may not use the expected extension. These
+# values are only used as a first pass; if ``UploadFile.content_type`` reports
+# an audio MIME type the upload will still be accepted even when the
+# extension is not explicitly listed (see routes/upload.py for details).
+ALLOWED_AUDIO_EXTENSIONS: List[str] = ['.wav', '.mp3', '.flac', '.ogg', '.m4a', '.aac', '.mpga', '.mpeg']
 ALLOWED_MIDI_EXTENSIONS: List[str] = ['.mid', '.midi']
 MAX_ERROR_INDICES_RETURNED: int = int(os.getenv("MAX_ERROR_INDICES_RETURNED", "10000"))  # Limit response size
 

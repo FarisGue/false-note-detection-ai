@@ -46,14 +46,45 @@ async def upload_files(
     audio_path = None
     ref_path = None
     try:
+        # ---------------------------------------------------------------------------
         # Validate file types
-        audio_ext = os.path.splitext(audio.filename)[1].lower() if audio.filename else ""
-        ref_ext = os.path.splitext(reference.filename)[1].lower() if reference.filename else ""
-        
+        #
+        # Historically, this API relied solely on file extensions to determine
+        # whether an uploaded file was a valid audio or MIDI asset. This rigid
+        # approach caused confusion when users converted an audio file to a
+        # different container or uploaded a data‑URI (e.g. a MIME string
+        # starting with ``data:audio/mp3``). In those cases the extension might
+        # be missing or unrecognised, resulting in a spurious "Unsupported audio
+        # format" error or silent mis‑processing.
+        #
+        # To make the API more robust we now also inspect the MIME type reported
+        # by the ``UploadFile``. If the file extension is not in the allowlist
+        # but the ``content_type`` indicates an audio payload (e.g. "audio/mp3",
+        # "audio/mpeg"), we still accept the file. The same logic applies to
+        # MIDI files ("audio/midi", etc.).
+        audio_ext = os.path.splitext(audio.filename or "")[1].lower()
+        ref_ext = os.path.splitext(reference.filename or "")[1].lower()
+
+        audio_mime = (audio.content_type or "").lower()
+        ref_mime = (reference.content_type or "").lower()
+
+        # Check audio: accept if extension allowed or mime indicates audio
         if audio_ext not in ALLOWED_AUDIO_EXTENSIONS:
-            raise ValueError(f"Unsupported audio format: {audio_ext}. Supported: {', '.join(ALLOWED_AUDIO_EXTENSIONS)}")
+            # Fallback: allow if content_type starts with 'audio/'
+            if not audio_mime.startswith("audio/"):
+                raise ValueError(
+                    f"Unsupported audio format: {audio_ext or audio_mime}. "
+                    f"Supported extensions: {', '.join(ALLOWED_AUDIO_EXTENSIONS)}"
+                )
+
+        # Check MIDI: accept if extension allowed or mime indicates midi
         if ref_ext not in ALLOWED_MIDI_EXTENSIONS:
-            raise ValueError(f"Unsupported MIDI format: {ref_ext}. Supported: {', '.join(ALLOWED_MIDI_EXTENSIONS)}")
+            midi_mime_types = {"audio/mid", "audio/midi", "audio/x-midi", "application/x-midi"}
+            if ref_mime not in midi_mime_types:
+                raise ValueError(
+                    f"Unsupported MIDI format: {ref_ext or ref_mime}. "
+                    f"Supported extensions: {', '.join(ALLOWED_MIDI_EXTENSIONS)}"
+                )
         
         # Check file sizes
         audio_size_mb = len(await audio.read()) / (1024 * 1024)
@@ -67,14 +98,58 @@ async def upload_files(
             raise ValueError(f"MIDI file too large: {ref_size_mb:.2f}MB. Maximum: {MAX_FILE_SIZE_MB}MB")
         
         # Save uploaded files to temporary locations
+        # When reading the uploaded audio we handle two cases:
+        # 1. Binary audio (standard uploads) – write bytes directly to temp file.
+        # 2. data: URI (base64 encoded) – decode the payload and write decoded bytes.
+        #
+        # This allows clients to send a base64 encoded audio string (for example
+        # copied from a web canvas or generated in JavaScript) and still have it
+        # processed correctly by the API. Without this logic the server would
+        # interpret the string as raw bytes and attempt to decode it as an audio
+        # file, which inevitably fails and yields false pitch values.
         with tempfile.NamedTemporaryFile(delete=False, suffix=audio_ext) as audio_tmp:
             audio_data = await audio.read()
-            audio_tmp.write(audio_data)
+            # Try to detect and decode a base64 data URI
+            decoded_written = False
+            try:
+                # Look for the ';base64,' marker in the first ~200 bytes to
+                # minimise scanning overhead. This marker separates the MIME
+                # declaration from the base64 payload in data URIs like
+                # "data:audio/mp3;base64,<payload>".
+                marker = b';base64,'
+                idx = audio_data.find(marker)
+                if 0 <= idx <= 200:
+                    # Split on the marker
+                    header = audio_data[:idx].decode('utf-8', errors='ignore')
+                    b64_part = audio_data[idx + len(marker):].decode('utf-8', errors='ignore')
+                    import base64
+                    decoded_bytes = base64.b64decode(b64_part)
+                    audio_tmp.write(decoded_bytes)
+                    decoded_written = True
+            except Exception:
+                # Fall back to normal write on any error
+                decoded_written = False
+            if not decoded_written:
+                audio_tmp.write(audio_data)
             audio_path = audio_tmp.name
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=ref_ext) as ref_tmp:
             ref_data = await reference.read()
-            ref_tmp.write(ref_data)
+            decoded_written = False
+            try:
+                marker = b';base64,'
+                idx = ref_data.find(marker)
+                if 0 <= idx <= 200:
+                    header = ref_data[:idx].decode('utf-8', errors='ignore')
+                    b64_part = ref_data[idx + len(marker):].decode('utf-8', errors='ignore')
+                    import base64
+                    decoded_bytes = base64.b64decode(b64_part)
+                    ref_tmp.write(decoded_bytes)
+                    decoded_written = True
+            except Exception:
+                decoded_written = False
+            if not decoded_written:
+                ref_tmp.write(ref_data)
             ref_path = ref_tmp.name
 
         # Extract pitch from audio and reference with common sampling rate

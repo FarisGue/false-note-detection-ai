@@ -130,120 +130,98 @@ if st.button("🔍 Analyze", type="primary", use_container_width=True):
                         ref_midi = np.array([freq_to_midi(f) for f in ref_freqs])
                         audio_midi = np.array([freq_to_midi(f) for f in audio_freqs])
                         
-                        # Créer la visualisation de notes (piano roll style)
-                        fig_notes, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
-                        
-                        # Graphique 1: Notes attendues (MIDI) en vert
-                        valid_ref = ref_midi >= 0
-                        if np.any(valid_ref):
-                            # Créer des segments continus pour chaque note
-                            for midi_note in range(int(ref_midi[valid_ref].min()), int(ref_midi[valid_ref].max()) + 1):
-                                mask = ref_midi == midi_note
-                                if np.any(mask):
-                                    # Trouver les segments continus
-                                    segments = []
-                                    start_idx = None
-                                    for i in range(len(mask)):
-                                        if mask[i] and start_idx is None:
-                                            start_idx = i
-                                        elif not mask[i] and start_idx is not None:
-                                            segments.append((start_idx, i))
-                                            start_idx = None
-                                    if start_idx is not None:
-                                        segments.append((start_idx, len(mask)))
-                                    
-                                    for start, end in segments:
-                                        if end > start:
-                                            note_name = midi_to_note_name(midi_note)
-                                            ax1.barh([midi_note], [times[end-1] - times[start]], 
-                                                    left=times[start], height=0.8, 
-                                                    color='lightgreen', edgecolor='green', linewidth=1.5)
-                                            if end - start > 2:  # Afficher le nom seulement si assez long
-                                                ax1.text(times[start] + (times[end-1] - times[start]) / 2, 
-                                                        midi_note, note_name,
-                                                        ha='center', va='center', fontsize=9, fontweight='bold')
-                        
-                        ax1.set_ylabel('Note MIDI', fontsize=11, fontweight='bold')
-                        ax1.set_title('🎼 Notes Attendues (Référence MIDI)', fontsize=13, fontweight='bold', pad=15)
-                        ax1.grid(True, alpha=0.3, axis='y')
-                        if np.any(valid_ref):
-                            ax1.set_ylim(max(40, ref_midi[valid_ref].min() - 2), 
-                                       min(90, ref_midi[valid_ref].max() + 2))
-                        ax1.set_xlim(0, duration)
-                        
-                        # Graphique 2: Notes détectées avec erreurs en rouge
-                        valid_audio = audio_midi >= 0
-                        if np.any(valid_audio):
-                            # Séparer les notes correctes et incorrectes
-                            for midi_note in range(int(audio_midi[valid_audio].min()), 
-                                                  int(audio_midi[valid_audio].max()) + 1):
-                                mask = audio_midi == midi_note
-                                if np.any(mask):
-                                    # Trouver les segments continus
-                                    segments = []
-                                    start_idx = None
-                                    current_error = None
-                                    
-                                    for i in range(len(mask)):
-                                        if mask[i]:
-                                            if start_idx is None:
-                                                start_idx = i
-                                                current_error = is_error[i]
-                                            elif is_error[i] != current_error:
-                                                # Changement d'état (erreur/correct)
-                                                segments.append((start_idx, i, current_error))
-                                                start_idx = i
-                                                current_error = is_error[i]
-                                        elif start_idx is not None:
-                                            segments.append((start_idx, i, current_error))
-                                            start_idx = None
-                                    
-                                    if start_idx is not None:
-                                        segments.append((start_idx, len(mask), current_error))
-                                    
-                                    for start, end, error in segments:
-                                        if end > start:
-                                            note_name = midi_to_note_name(midi_note)
-                                            color = 'red' if error else 'lightblue'
-                                            edge_color = 'darkred' if error else 'blue'
-                                            line_width = 2 if error else 1
-                                            
-                                            ax2.barh([midi_note], [times[end-1] - times[start]], 
-                                                    left=times[start], height=0.8,
-                                                    color=color, edgecolor=edge_color, linewidth=line_width)
-                                            if end - start > 2:
-                                                ax2.text(times[start] + (times[end-1] - times[start]) / 2, 
-                                                        midi_note, note_name,
-                                                        ha='center', va='center', fontsize=9, fontweight='bold',
-                                                        color='white' if error else 'black')
-                        
-                        ax2.set_xlabel('Temps (secondes)', fontsize=11, fontweight='bold')
-                        ax2.set_ylabel('Note MIDI', fontsize=11, fontweight='bold')
-                        ax2.set_title('🎵 Notes Détectées (Audio) - ❌ Fausses Notes en Rouge', 
-                                    fontsize=13, fontweight='bold', pad=15)
-                        ax2.grid(True, alpha=0.3, axis='y')
-                        if np.any(valid_audio):
-                            ax2.set_ylim(max(40, audio_midi[valid_audio].min() - 2), 
-                                       min(90, audio_midi[valid_audio].max() + 2))
-                        ax2.set_xlim(0, duration)
-                        
-                        # Légende
-                        from matplotlib.patches import Rectangle
-                        legend_elements = [
-                            Rectangle((0, 0), 1, 1, facecolor='lightgreen', edgecolor='green', 
-                                    linewidth=1.5, label='Note attendue (MIDI)'),
-                            Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor='blue', 
-                                    label='Note correcte détectée'),
-                            Rectangle((0, 0), 1, 1, facecolor='red', edgecolor='darkred', 
-                                    linewidth=2, label='❌ Fausse note (erreur)')
-                        ]
-                        ax2.legend(handles=legend_elements, loc='upper right', fontsize=10, framealpha=0.9)
-                        
-                        plt.tight_layout()
-                        st.pyplot(fig_notes)
-                        plt.close()
-                        
-                        st.info("💡 **Légende:** Les notes en rouge indiquent les fausses notes détectées. Comparez avec les notes vertes (référence MIDI) pour voir les différences.")
+                    # -----------------------------------------------------------------------
+                    # Improved visualisation: Musical staff view
+                    #
+                    # The previous version of this app used horizontal bar charts to
+                    # indicate the duration of each note (a piano‑roll style view). While
+                    # functional, that layout does not resemble traditional sheet
+                    # notation and can feel disconnected from how musicians perceive
+                    # melodies. In this revision we instead plot individual note
+                    # markers on a simplified "staff". Horizontal grid lines are drawn
+                    # at each MIDI note, with thicker lines every octave to aid
+                    # orientation. Notes from the reference (MIDI) are shown as light
+                    # green dots, correctly performed notes are light blue and
+                    # mis‑performed notes (false notes) are highlighted in red. Each
+                    # marker is drawn with a border to improve contrast.
+
+                    # Determine the MIDI range to display
+                    valid_ref = ref_midi >= 0
+                    valid_audio = audio_midi >= 0
+                    all_midi_notes = np.concatenate([
+                        ref_midi[valid_ref],
+                        audio_midi[valid_audio]
+                    ])
+                    if len(all_midi_notes) > 0:
+                        min_midi_note = int(np.max([40, all_midi_notes.min() - 2]))
+                        max_midi_note = int(np.min([90, all_midi_notes.max() + 2]))
+                    else:
+                        min_midi_note, max_midi_note = 40, 80
+
+                    fig_notes, ax_staff = plt.subplots(1, 1, figsize=(14, 6))
+
+                    # Draw horizontal grid lines for each MIDI note in range
+                    for midi_val in range(min_midi_note, max_midi_note + 1):
+                        linewidth = 0.3
+                        color = 'lightgrey'
+                        # Emphasise octave (C notes) with thicker line
+                        if midi_val % 12 == 0:
+                            linewidth = 0.6
+                            color = 'grey'
+                        ax_staff.axhline(y=midi_val, color=color, linewidth=linewidth, zorder=0)
+
+                    # Plot reference MIDI notes (green)
+                    if np.any(valid_ref):
+                        ref_times = times[valid_ref]
+                        ref_notes = ref_midi[valid_ref]
+                        ax_staff.scatter(ref_times, ref_notes, c='lightgreen', edgecolors='green', s=30,
+                                         label='Référence MIDI', zorder=3)
+
+                    # Plot audio notes: separate correct and erroneous frames
+                    if np.any(valid_audio):
+                        audio_times = times[valid_audio]
+                        audio_notes = audio_midi[valid_audio]
+                        audio_errors = is_error[valid_audio]
+                        # Correct notes
+                        correct_mask = ~audio_errors
+                        if np.any(correct_mask):
+                            ax_staff.scatter(
+                                audio_times[correct_mask], audio_notes[correct_mask],
+                                c='lightblue', edgecolors='blue', s=30, label='Note correcte', zorder=3
+                            )
+                        # Erroneous notes
+                        error_mask = audio_errors
+                        if np.any(error_mask):
+                            ax_staff.scatter(
+                                audio_times[error_mask], audio_notes[error_mask],
+                                c='red', edgecolors='darkred', s=40, label='❌ Fausse note', zorder=4
+                            )
+
+                    # Configure axes
+                    ax_staff.set_xlabel('Temps (secondes)', fontsize=11, fontweight='bold')
+                    ax_staff.set_ylabel('Note MIDI', fontsize=11, fontweight='bold')
+                    ax_staff.set_title('🎼 Visualisation des notes sur une portée simplifiée', fontsize=13, fontweight='bold', pad=10)
+                    ax_staff.set_ylim(min_midi_note - 1, max_midi_note + 1)
+                    ax_staff.set_xlim(0, duration)
+                    ax_staff.grid(False)
+                    # Build legend
+                    ax_staff.legend(loc='upper right', fontsize=10)
+                    # Improve tick labels: show note names instead of raw MIDI numbers every 2 semitones
+                    y_ticks = []
+                    y_tick_labels = []
+                    for midi_val in range(min_midi_note, max_midi_note + 1):
+                        # Only label every other semitone to avoid clutter
+                        if (midi_val - min_midi_note) % 2 == 0:
+                            y_ticks.append(midi_val)
+                            y_tick_labels.append(midi_to_note_name(midi_val))
+                    ax_staff.set_yticks(y_ticks)
+                    ax_staff.set_yticklabels(y_tick_labels, fontsize=9)
+
+                    plt.tight_layout()
+                    st.pyplot(fig_notes)
+                    plt.close()
+                    
+                    st.info("💡 **Légende:** Les points verts représentent la référence MIDI, les bleus les notes correctement jouées et les rouges les fausses notes.")
                 
                 # Create timeline visualization (ancienne visualisation)
                 st.markdown("### 📈 Timeline des Erreurs")
