@@ -7,11 +7,13 @@ from ..services.error_detector import detect_errors
 from ..services.scoring import compute_score
 from ..services.aligner import align_and_warp
 from ..models.analysis_result import AnalysisResult
+from ..services.recommender import generate_recommendations
 
 import numpy as np
 import tempfile
 import os
 import logging
+import os
 from ..config import (
     TARGET_SAMPLING_RATE,
     DEFAULT_THRESHOLD_CENTS,
@@ -40,6 +42,10 @@ async def upload_files(
     ignore_silence: bool = Query(
         DEFAULT_IGNORE_SILENCE, 
         description="Ignore frames where either audio or reference is silent"
+    ),
+    generate_recommendations_flag: bool = Query(
+        False,
+        description="Generate practice recommendations using a language model"
     ),
 ):
     """Receive an audio file and a reference MIDI file, perform false note analysis and return the result."""
@@ -240,6 +246,7 @@ async def upload_files(
             "sample_rate": sample_rate
         }
         
+        # Initialise result model
         result = AnalysisResult(
             total_frames=total_frames,
             correct_frames=correct_frames,
@@ -252,7 +259,35 @@ async def upload_files(
             threshold_cents=threshold_cents,
             pitch_data=pitch_data,
         )
-        logger.info(f"Analysis complete: accuracy={accuracy:.2f}%, mean_cents={score['mean_cents']:.2f}")
+
+        # Optionally generate practice recommendations
+        if generate_recommendations_flag:
+            from ..config import ENABLE_RECOMMENDATIONS, TARGET_SAMPLING_RATE
+            if ENABLE_RECOMMENDATIONS or os.getenv("ENABLE_RECOMMENDATIONS"):
+                try:
+                    rec = generate_recommendations(
+                        accuracy_percent=accuracy,
+                        incorrect_frames=incorrect_frames,
+                        total_frames=total_frames,
+                        mean_cents=score["mean_cents"],
+                        max_cents=max_cents,
+                        error_indices=error_indices_list,
+                        duration_seconds=duration,
+                        threshold_cents=threshold_cents,
+                        sample_rate=TARGET_SAMPLING_RATE,
+                    )
+                    result.recommendations = rec
+                except Exception as e:
+                    # If recommendation generation fails, log and proceed without it
+                    logger.error(f"Recommendation generation failed: {e}")
+                    result.recommendations = None
+            else:
+                # Recommendations disabled globally; leave field as None
+                result.recommendations = None
+
+        logger.info(
+            f"Analysis complete: accuracy={accuracy:.2f}%, mean_cents={score['mean_cents']:.2f}"
+        )
         return result
 
     except ValueError as ve:

@@ -2,16 +2,6 @@
 
 import os
 from typing import List
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Load environment variables from .env file if it exists
-env_path = Path(__file__).parent.parent.parent / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    # Try to load from current directory as fallback
-    load_dotenv()
 
 # Audio processing settings
 TARGET_SAMPLING_RATE: float = float(os.getenv("TARGET_SR", "100.0"))  # frames per second
@@ -55,11 +45,38 @@ LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
-# OpenRoute DeepSeek API settings
+# -----------------------------------------------------------------------------
+# OpenRouter / Recommendations configuration
+#
+# The backend can optionally generate practice recommendations by sending the
+# analysis results to a large language model hosted on OpenRouter. To enable
+# this feature you must supply an API key and endpoint in your environment
+# variables. If `OPENROUTE_API_KEY` is missing or empty the recommendation
+# service will be disabled and no external requests will be made.
+#
+# OPENROUTE_API_KEY: Secret token used to authenticate with OpenRouter. Keep
+# this value private; do not log or expose it in responses. If unset or empty
+# recommendations are skipped.
+# OPENROUTE_API_URL: Base URL for the OpenRouter chat completions endpoint.
+# Defaults to the OpenRouter v1 chat completions API. You can override this
+# value to point to a different proxy or test server.
+# DEEPSEEK_MODEL: Name of the model to use for generating recommendations.
+# The default 'deepseek/deepseek-chat' is a light, free model suitable for
+# quick feedback, but you can substitute any compatible model available via
+# OpenRouter.
+# ENABLE_RECOMMENDATIONS: Optional flag to globally enable or disable
+# recommendation generation. Set to 'true' or '1' to force on, 'false' or '0'
+# to force off. If unspecified, recommendations are enabled only when a
+# valid API key is present.
+
 OPENROUTE_API_KEY: str = os.getenv("OPENROUTE_API_KEY", "")
 OPENROUTE_API_URL: str = os.getenv(
-    "OPENROUTE_API_URL", 
-    "https://openrouter.ai/api/v1/chat/completions"
+    "OPENROUTE_API_URL",
+    "https://openrouter.ai/api/v1/chat/completions",
 )
 DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL", "deepseek/deepseek-chat")
+ENABLE_RECOMMENDATIONS: bool = (
+    bool(os.getenv("ENABLE_RECOMMENDATIONS"))
+    and os.getenv("ENABLE_RECOMMENDATIONS").lower() in {"1", "true", "yes"}
+)
 

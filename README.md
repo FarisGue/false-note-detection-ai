@@ -15,7 +15,6 @@ AI-powered tool that detects false notes in musical performances by comparing au
   - Detailed error indices
 - **Modern UI**: Beautiful Streamlit interface with interactive visualizations
 - **RESTful API**: FastAPI backend with automatic documentation
-- **🤖 AI Recommendations**: Personalized recommendations using OpenRoute DeepSeek API to help musicians improve their playing
 
 ## Installation
 
@@ -37,7 +36,6 @@ python -m uvicorn app.main:app --reload --port 8000
 The API will be available at `http://localhost:8000`
 - API Documentation: `http://localhost:8000/docs`
 - Health Check: `http://localhost:8000/analysis/health`
-- AI Recommendations: `http://localhost:8000/analysis/recommendations`
 
 ### Start the Streamlit Interface
 
@@ -71,80 +69,19 @@ Upload audio and MIDI files for analysis.
   "accuracy_percent": 96.0,
   "error_indices": [100, 150, ...],
   "duration_seconds": 50.0,
-  "threshold_cents": 40.0,
-  "pitch_data": {...}
+  "threshold_cents": 40.0
 }
 ```
-
-### POST `/analysis/recommendations`
-
-Generate AI-powered recommendations for improving musical performance.
-
-**Request Body:**
-```json
-{
-  "analysis_result": {
-    "total_frames": 5000,
-    "accuracy_percent": 96.0,
-    "mean_cents": 25.5,
-    ...
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "recommendations": "Based on your performance analysis...",
-  "success": true,
-  "error_message": null
-}
-```
-
-**Note:** The API key is pre-configured by default. You can override it using environment variables or a `.env` file.
 
 ## Configuration
 
 Configuration can be set via environment variables or by editing `app/config.py`:
 
-### Audio Processing
 - `TARGET_SR`: Sampling rate for pitch timeline (default: 100.0 fps)
 - `DEFAULT_THRESHOLD_CENTS`: Default error detection threshold (default: 40.0)
 - `DEFAULT_IGNORE_SILENCE`: Ignore silence by default (default: true)
 - `MAX_FILE_SIZE_MB`: Maximum file size in MB (default: 50)
 - `LOG_LEVEL`: Logging level (default: INFO)
-
-### AI Recommendations
-AI recommendations are enabled by default with a pre-configured API key. The configuration is loaded from:
-1. Environment variables (highest priority)
-2. `.env` file in the project root (if exists)
-3. Default values in `app/config.py`
-
-To customize the API key, you can:
-
-**Option 1: Use .env file (Recommended)**
-```bash
-# Copy the example file
-cp .env.example .env
-
-# Edit .env and update OPENROUTE_API_KEY with your own key
-```
-
-**Option 2: Set environment variable**
-```bash
-export OPENROUTE_API_KEY="your-api-key-here"
-```
-Or on Windows:
-```powershell
-$env:OPENROUTE_API_KEY="your-api-key-here"
-```
-
-**Configuration options:**
-- `OPENROUTE_API_KEY`: Your OpenRoute API key (default: pre-configured)
-- `OPENROUTE_API_URL`: API endpoint URL (default: `https://openrouter.ai/api/v1/chat/completions`)
-- `DEEPSEEK_MODEL`: Model to use (default: `deepseek/deepseek-chat`)
-
-**Note:** The `.env` file is automatically ignored by git for security reasons.
 
 ## How It Works
 
@@ -153,7 +90,6 @@ $env:OPENROUTE_API_KEY="your-api-key-here"
 3. **DTW Alignment**: Aligns audio and MIDI sequences to handle tempo variations
 4. **Error Detection**: Compares aligned sequences and identifies frames where pitch deviation exceeds threshold
 5. **Scoring**: Calculates accuracy, mean/max cents deviation, and error statistics
-6. **AI Recommendations** (optional): Sends analysis results to OpenRoute DeepSeek API to generate personalized improvement suggestions
 
 ## Technologies
 
