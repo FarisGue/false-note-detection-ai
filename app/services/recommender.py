@@ -121,14 +121,19 @@ def generate_recommendations(
         "You speak in a friendly, conversational tone, as if you're having a one-on-one lesson "
         "with your student. You use encouraging language and always find something positive to "
         "acknowledge before offering suggestions for improvement. You provide specific, actionable "
-        "advice that feels personal and tailored to each student's needs."
+        "advice that feels personal and tailored to each student's needs. "
+        "IMPORTANT: This is NOT an interactive chat - you are providing written feedback that will "
+        "be read by the student. Do NOT ask questions at the end (like 'Do you have questions?' "
+        "or 'Feel free to ask'). Simply conclude with an encouraging closing statement. Your response "
+        "should be complete and self-contained, ending with a positive, motivating note."
     )
     user_prompt = (
         "Bonjour ! J'ai enregistré ma performance et voici les résultats de l'analyse :\n\n"
         f"{summary}\n\n"
         "Pouvez-vous me donner vos conseils de professeur de musique ? J'aimerais savoir comment "
         "m'améliorer. Parlez-moi comme vous le feriez à un élève lors d'un cours particulier - "
-        "soyez encourageant, spécifique et donnez-moi 3-5 suggestions pratiques pour progresser."
+        "soyez encourageant, spécifique et donnez-moi 3-5 suggestions pratiques pour progresser. "
+        "Terminez par une conclusion encourageante, sans poser de questions."
     )
 
     payload = {
