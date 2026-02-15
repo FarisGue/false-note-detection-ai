@@ -1,7 +1,7 @@
 """Pydantic model representing the result of a false note analysis."""
 
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 
 class AnalysisResult(BaseModel):
@@ -16,3 +16,8 @@ class AnalysisResult(BaseModel):
     error_indices: List[int] = Field(..., description="Frame indices where errors were detected")
     duration_seconds: float = Field(..., description="Duration of the analysis in seconds")
     threshold_cents: float = Field(..., description="Threshold used for error detection in cents")
+    # Optional: sampled pitch data for visualization (to keep response size manageable)
+    pitch_data: Optional[Dict[str, Any]] = Field(
+        None, 
+        description="Sampled pitch frequencies for visualization (audio and reference)"
+    )

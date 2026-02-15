@@ -148,6 +148,23 @@ async def upload_files(
             )
             error_indices_list = error_indices_list[:MAX_ERROR_INDICES_RETURNED]
         
+        # Create sampled pitch data for visualization (to keep response size manageable)
+        # Sample every Nth frame - aim for ~500-1000 data points max
+        sample_rate = max(1, int(total_frames / 500))
+        sampled_indices = np.arange(0, total_frames, sample_rate)
+        sampled_audio = f_audio_aligned[sampled_indices].tolist()
+        sampled_ref = f_ref_aligned[sampled_indices].tolist()
+        sampled_times = (sampled_indices / TARGET_SAMPLING_RATE).tolist()
+        sampled_error_mask = np.isin(sampled_indices, error_indices).tolist()
+        
+        pitch_data = {
+            "times": sampled_times,
+            "audio_frequencies": sampled_audio,
+            "reference_frequencies": sampled_ref,
+            "is_error": sampled_error_mask,
+            "sample_rate": sample_rate
+        }
+        
         result = AnalysisResult(
             total_frames=total_frames,
             correct_frames=correct_frames,
@@ -158,6 +175,7 @@ async def upload_files(
             error_indices=error_indices_list,
             duration_seconds=duration,
             threshold_cents=threshold_cents,
+            pitch_data=pitch_data,
         )
         logger.info(f"Analysis complete: accuracy={accuracy:.2f}%, mean_cents={score['mean_cents']:.2f}")
         return result
