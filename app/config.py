@@ -2,6 +2,16 @@
 
 import os
 from typing import List
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+env_path = Path(__file__).parent.parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    # Try to load from current directory as fallback
+    load_dotenv()
 
 # Audio processing settings
 TARGET_SAMPLING_RATE: float = float(os.getenv("TARGET_SR", "100.0"))  # frames per second
@@ -44,4 +54,12 @@ API_DESCRIPTION: str = "API for detecting false notes in music performances."
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+
+# OpenRoute DeepSeek API settings
+OPENROUTE_API_KEY: str = os.getenv("OPENROUTE_API_KEY", "")
+OPENROUTE_API_URL: str = os.getenv(
+    "OPENROUTE_API_URL", 
+    "https://openrouter.ai/api/v1/chat/completions"
+)
+DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL", "deepseek/deepseek-chat")
 

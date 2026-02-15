@@ -317,6 +317,69 @@ if st.button("🔍 Analyze", type="primary", use_container_width=True):
                     if len(error_indices) > 100:
                         st.info(f"Showing first 100 errors out of {len(error_indices)} total errors.")
                 
+                # AI Recommendations - Generate automatically
+                st.subheader("🤖 Recommandations IA")
+                
+                with st.spinner("🔄 Génération des recommandations par l'IA... Cela peut prendre quelques secondes."):
+                    try:
+                        # Build recommendations URL correctly
+                        if api_url.endswith("/upload/"):
+                            recommendations_url = api_url.replace("/upload/", "/analysis/recommendations")
+                        elif api_url.endswith("/upload"):
+                            recommendations_url = api_url.replace("/upload", "/analysis/recommendations")
+                        else:
+                            # Fallback: construct from base URL
+                            base_url = api_url.split("/upload")[0] if "/upload" in api_url else api_url.rstrip("/")
+                            recommendations_url = f"{base_url}/analysis/recommendations"
+                        
+                        recommendations_response = requests.post(
+                            recommendations_url,
+                            json={"analysis_result": result},
+                            timeout=60
+                        )
+                        
+                        if recommendations_response.status_code == 200:
+                            recommendations_data = recommendations_response.json()
+                            
+                            if recommendations_data.get("success") and recommendations_data.get("recommendations"):
+                                st.success("✅ Recommandations générées avec succès !")
+                                
+                                # Display recommendations directly
+                                st.markdown("### 📋 Recommandations pour améliorer votre performance")
+                                st.markdown(recommendations_data["recommendations"])
+                                
+                                # Store recommendations in session state
+                                st.session_state['last_recommendations'] = recommendations_data["recommendations"]
+                            else:
+                                error_msg = recommendations_data.get("error_message", "Erreur inconnue")
+                                st.warning(f"⚠️ {error_msg}")
+                                st.info(
+                                    "💡 **Note:** Pour activer les recommandations IA, vous devez configurer la clé API OpenRoute. "
+                                    "Assurez-vous que le fichier `.env` contient `OPENROUTE_API_KEY` ou définissez la variable d'environnement."
+                                )
+                        elif recommendations_response.status_code == 500:
+                            error_detail = recommendations_response.text
+                            try:
+                                error_json = recommendations_response.json()
+                                error_detail = error_json.get('detail', error_detail)
+                            except:
+                                pass
+                            st.error(f"❌ Erreur serveur: {error_detail}")
+                            st.info("💡 Vérifiez les logs du serveur FastAPI pour plus de détails.")
+                        else:
+                            error_text = recommendations_response.text
+                            st.error(f"❌ Erreur lors de la génération des recommandations ({recommendations_response.status_code})")
+                            st.text(f"Détails: {error_text[:200]}")
+                            
+                    except requests.exceptions.ConnectionError:
+                        st.error("❌ Impossible de se connecter à l'API. Assurez-vous que le serveur FastAPI est en cours d'exécution.")
+                    except requests.exceptions.Timeout:
+                        st.error("⏱️ La requête a expiré. L'API de recommandations prend trop de temps à répondre.")
+                    except Exception as exc:
+                        st.error(f"❌ Erreur lors de la génération des recommandations: {exc}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                
                 # Download results
                 st.subheader("💾 Download Results")
                 result_json = json.dumps(result, indent=2)
