@@ -1,0 +1,1 @@
+"""Main application package for the false note detection project."""
