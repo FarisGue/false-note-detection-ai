@@ -78,8 +78,21 @@ async def upload_files(
             ref_path = ref_tmp.name
 
         # Extract pitch from audio and reference with common sampling rate
-        f_audio = extract_pitch(audio_path, target_sr=TARGET_SAMPLING_RATE)
-        f_ref = parse_midi(ref_path, target_sr=TARGET_SAMPLING_RATE)
+        try:
+            f_audio = extract_pitch(audio_path, target_sr=TARGET_SAMPLING_RATE)
+        except ValueError as ve:
+            raise ValueError(f"Audio processing error: {str(ve)}")
+        except Exception as e:
+            logger.error(f"Unexpected error extracting pitch: {e}")
+            raise ValueError(f"Failed to process audio file: {str(e)}")
+        
+        try:
+            f_ref = parse_midi(ref_path, target_sr=TARGET_SAMPLING_RATE)
+        except ValueError as ve:
+            raise ValueError(f"MIDI processing error: {str(ve)}")
+        except Exception as e:
+            logger.error(f"Unexpected error parsing MIDI: {e}")
+            raise ValueError(f"Failed to process MIDI file: {str(e)}")
 
         # Validate that we have data
         if len(f_audio) == 0:
@@ -89,8 +102,14 @@ async def upload_files(
 
         # Align sequences using DTW to handle tempo differences
         logger.info(f"Aligning sequences: audio={len(f_audio)} frames, ref={len(f_ref)} frames")
-        f_audio_aligned, f_ref_aligned = align_and_warp(f_audio, f_ref)
-        logger.info(f"Aligned sequences: {len(f_audio_aligned)} frames")
+        try:
+            f_audio_aligned, f_ref_aligned = align_and_warp(f_audio, f_ref)
+            logger.info(f"Aligned sequences: {len(f_audio_aligned)} frames")
+        except ValueError as ve:
+            raise ValueError(f"Alignment error: {str(ve)}")
+        except Exception as e:
+            logger.error(f"Unexpected error during alignment: {e}")
+            raise ValueError(f"Failed to align sequences: {str(e)}")
 
         # Detect false notes with configurable threshold
         error_indices = detect_errors(
@@ -119,6 +138,16 @@ async def upload_files(
         else:
             max_cents = 0.0
 
+        # Limit error indices to prevent huge responses
+        from ..config import MAX_ERROR_INDICES_RETURNED
+        error_indices_list = error_indices.tolist()
+        if len(error_indices_list) > MAX_ERROR_INDICES_RETURNED:
+            logger.warning(
+                f"Too many error indices ({len(error_indices_list)}), "
+                f"limiting to first {MAX_ERROR_INDICES_RETURNED}"
+            )
+            error_indices_list = error_indices_list[:MAX_ERROR_INDICES_RETURNED]
+        
         result = AnalysisResult(
             total_frames=total_frames,
             correct_frames=correct_frames,
@@ -126,7 +155,7 @@ async def upload_files(
             mean_cents=score["mean_cents"],
             max_cents=max_cents,
             accuracy_percent=accuracy,
-            error_indices=error_indices.tolist(),
+            error_indices=error_indices_list,
             duration_seconds=duration,
             threshold_cents=threshold_cents,
         )

@@ -24,8 +24,14 @@ def parse_midi(
     Returns:
         A 1D numpy array of frequencies representing the reference pitch at each frame.
         For multiple instruments, returns the highest frequency at each frame.
+        
+    Raises:
+        ValueError: If MIDI file cannot be parsed or is invalid.
     """
-    midi = pretty_midi.PrettyMIDI(midi_path)
+    try:
+        midi = pretty_midi.PrettyMIDI(midi_path)
+    except Exception as e:
+        raise ValueError(f"Failed to parse MIDI file: {str(e)}")
     if not midi.instruments:
         logger.warning(f"No instruments found in MIDI file: {midi_path}")
         return np.array([])

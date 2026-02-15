@@ -18,10 +18,16 @@ DEFAULT_IGNORE_SILENCE: bool = os.getenv("DEFAULT_IGNORE_SILENCE", "true").lower
 DEFAULT_MIDI_INSTRUMENT_INDEX: int = int(os.getenv("DEFAULT_MIDI_INSTRUMENT_INDEX", "0"))
 MERGE_MIDI_INSTRUMENTS: bool = os.getenv("MERGE_MIDI_INSTRUMENTS", "false").lower() == "true"
 
+# DTW alignment settings
+MAX_DTW_LENGTH: int = int(os.getenv("MAX_DTW_LENGTH", "60000"))  # Maximum frames for DTW (~10 min at 100 fps)
+
 # File upload settings
 MAX_FILE_SIZE_MB: int = int(os.getenv("MAX_FILE_SIZE_MB", "50"))
+MAX_AUDIO_DURATION_SECONDS: float = float(os.getenv("MAX_AUDIO_DURATION_SECONDS", "600"))  # 10 minutes
+MIN_AUDIO_DURATION_SECONDS: float = float(os.getenv("MIN_AUDIO_DURATION_SECONDS", "0.1"))  # 100ms
 ALLOWED_AUDIO_EXTENSIONS: List[str] = ['.wav', '.mp3', '.flac', '.ogg', '.m4a']
 ALLOWED_MIDI_EXTENSIONS: List[str] = ['.mid', '.midi']
+MAX_ERROR_INDICES_RETURNED: int = int(os.getenv("MAX_ERROR_INDICES_RETURNED", "10000"))  # Limit response size
 
 # API settings
 API_TITLE: str = "False Note Detection API"

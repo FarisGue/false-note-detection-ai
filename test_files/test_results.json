@@ -1,0 +1,17 @@
+{
+  "total_frames": 501,
+  "correct_frames": 496,
+  "incorrect_frames": 5,
+  "mean_cents": 20.092762272199764,
+  "max_cents": 4026.1139505877272,
+  "accuracy_percent": 99.00199600798403,
+  "error_indices": [
+    97,
+    98,
+    197,
+    198,
+    199
+  ],
+  "duration_seconds": 5.01,
+  "threshold_cents": 40.0
+}
