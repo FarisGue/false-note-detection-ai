@@ -262,9 +262,18 @@ async def upload_files(
 
         # Optionally generate practice recommendations
         if generate_recommendations_flag:
-            from ..config import ENABLE_RECOMMENDATIONS, TARGET_SAMPLING_RATE
-            if ENABLE_RECOMMENDATIONS or os.getenv("ENABLE_RECOMMENDATIONS"):
+            from ..config import OPENROUTE_API_KEY
+            # Check if recommendations are explicitly disabled via environment variable
+            enable_env = os.getenv("ENABLE_RECOMMENDATIONS", "").lower()
+            is_explicitly_disabled = enable_env in {"0", "false", "no"}
+            
+            # Generate recommendations if:
+            # 1. User requested them (generate_recommendations_flag is True) - already checked
+            # 2. API key is configured
+            # 3. Recommendations are not explicitly disabled via env var
+            if not is_explicitly_disabled and OPENROUTE_API_KEY:
                 try:
+                    logger.info("Generating AI recommendations...")
                     rec = generate_recommendations(
                         accuracy_percent=accuracy,
                         incorrect_frames=incorrect_frames,
@@ -277,12 +286,19 @@ async def upload_files(
                         sample_rate=TARGET_SAMPLING_RATE,
                     )
                     result.recommendations = rec
+                    if rec:
+                        logger.info(f"Successfully generated AI recommendations ({len(rec)} chars)")
+                    else:
+                        logger.warning("Recommendation generation returned None")
                 except Exception as e:
                     # If recommendation generation fails, log and proceed without it
-                    logger.error(f"Recommendation generation failed: {e}")
+                    logger.error(f"Recommendation generation failed: {e}", exc_info=True)
                     result.recommendations = None
             else:
-                # Recommendations disabled globally; leave field as None
+                if not OPENROUTE_API_KEY:
+                    logger.warning("Recommendations requested but no OpenRouter API key configured")
+                elif is_explicitly_disabled:
+                    logger.info("Recommendations disabled by ENABLE_RECOMMENDATIONS environment variable")
                 result.recommendations = None
 
         logger.info(

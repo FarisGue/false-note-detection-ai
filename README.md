@@ -83,6 +83,21 @@ Configuration can be set via environment variables or by editing `app/config.py`
 - `MAX_FILE_SIZE_MB`: Maximum file size in MB (default: 50)
 - `LOG_LEVEL`: Logging level (default: INFO)
 
+### Activer les Recommandations IA 🤖
+
+Le système peut générer des recommandations personnalisées pour améliorer votre performance musicale en utilisant l'IA. Pour activer cette fonctionnalité :
+
+1. **Créer un compte OpenRouter** (gratuit) : https://openrouter.ai
+2. **Obtenir une clé API** : https://openrouter.ai/keys
+3. **Créer un fichier `.env`** à la racine du projet (copiez `.env.example`)
+4. **Ajouter votre clé API** :
+   ```bash
+   OPENROUTE_API_KEY=sk-or-v1-votre-cle-api-ici
+   ```
+5. **Dans l'interface Streamlit**, cochez la case "Generate practice recommendations" avant d'analyser vos fichiers
+
+Les recommandations apparaîtront dans une section dédiée après l'analyse de votre performance.
+
 ## How It Works
 
 1. **Pitch Extraction**: Extracts fundamental frequency (f0) from audio using PYIN algorithm

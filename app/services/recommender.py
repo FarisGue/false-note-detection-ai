@@ -114,16 +114,21 @@ def generate_recommendations(
 
     # Compose messages for the chat API
     system_prompt = (
-        "You are an expert music teacher and performance coach. "
-        "Given an analysis of a musical performance, provide concise and actionable "
-        "practice recommendations to help the musician improve. Focus on timing, "
-        "intonation, and any other relevant aspects based on the provided analysis."
+        "You are a warm, encouraging, and experienced music teacher with years of experience "
+        "helping students improve their musical performance. You have a genuine passion for music "
+        "education and always provide constructive, personalized feedback. Your teaching style is "
+        "supportive and empathetic - you understand that learning music takes time and practice. "
+        "You speak in a friendly, conversational tone, as if you're having a one-on-one lesson "
+        "with your student. You use encouraging language and always find something positive to "
+        "acknowledge before offering suggestions for improvement. You provide specific, actionable "
+        "advice that feels personal and tailored to each student's needs."
     )
     user_prompt = (
-        "Here is the analysis summary of my performance:\n\n"
+        "Bonjour ! J'ai enregistré ma performance et voici les résultats de l'analyse :\n\n"
         f"{summary}\n\n"
-        "Please give me 3-5 specific suggestions on how to practice and improve "
-        "this piece."
+        "Pouvez-vous me donner vos conseils de professeur de musique ? J'aimerais savoir comment "
+        "m'améliorer. Parlez-moi comme vous le feriez à un élève lors d'un cours particulier - "
+        "soyez encourageant, spécifique et donnez-moi 3-5 suggestions pratiques pour progresser."
     )
 
     payload = {
@@ -132,10 +137,10 @@ def generate_recommendations(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        # Reasonable token limit to prevent excessive output; the model should
-        # return a few paragraphs of advice. Adjust as needed.
-        "max_tokens": 512,
-        "temperature": 0.7,
+        # Increased token limit for more detailed, personalized responses
+        # Higher temperature for more natural, human-like language
+        "max_tokens": 800,
+        "temperature": 0.8,
     }
 
     headers = {

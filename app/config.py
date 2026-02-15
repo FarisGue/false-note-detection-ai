@@ -2,6 +2,18 @@
 
 import os
 from typing import List
+from pathlib import Path
+
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    # Load .env file from the project root (parent of app directory)
+    env_path = Path(__file__).parent.parent / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+except ImportError:
+    # python-dotenv not installed, skip .env loading
+    pass
 
 # Audio processing settings
 TARGET_SAMPLING_RATE: float = float(os.getenv("TARGET_SR", "100.0"))  # frames per second

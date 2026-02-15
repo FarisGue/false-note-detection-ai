@@ -344,6 +344,9 @@ if st.button("🔍 Analyze", type="primary", use_container_width=True):
                 if rec_text:
                     st.markdown("### 🎯 Practice Recommendations")
                     st.write(rec_text)
+                elif enable_recommendations:
+                    # User requested recommendations but none were generated
+                    st.warning("⚠️ Recommendations were requested but could not be generated. Check server logs for details.")
                 
             elif response is not None:
                 error_detail = response.text
